@@ -14,8 +14,9 @@ final class JSONVersionableTests: XCTestCase {
     
     func testV1ToV2Migration() {
         let origin = PersonFixtures.simpleV1
-        let v2Migration = PersonV2Migration()
-        let migration = JSONMigration(currentVersion: 2, versionMigrations: [v2Migration])
+        let v2Migration = PersonV2Migration().eraseToAnyMigration()
+        let v3Migration = PersonV3Migration().eraseToAnyMigration()
+        let migration = JSONMigration(currentVersion: 2, versionMigrations: [v2Migration, v3Migration])
         let migratedJSON = try! migration.migration(origin: origin).json
         
         let peopleJSON = migratedJSON["people"] as! [JSON]
@@ -29,7 +30,7 @@ final class JSONVersionableTests: XCTestCase {
     
     func testV2ToV3Migration() {
         let origin = PersonFixtures.simpleV2
-        let v3 = PersonV3Migration()
+        let v3 = PersonV3Migration().eraseToAnyMigration()
         let migration = JSONMigration(currentVersion: 3, versionMigrations: [v3])
         let migratedJSON = try! migration.migration(origin: origin).json
         

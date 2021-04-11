@@ -8,6 +8,22 @@ Using protocol to define a scheme version defined json migration process.
 - Flexiable migration process definition.
 - Tests cover all version migrate combination.
 
+## Requirements
+
+- iOS 10.0+ / macOS 10.12+ / tvOS 10.0+ / watchOS 3.0+ / Linux(with SPM)
+- Swift 5.0+
+
+### Installation
+
+#### Swift Package Manager
+
+- File > Swift Packages > Add Package Dependency
+- Add `https://github.com/Binlogo/JSONVersionable.git`
+
+#### CocoaPods
+
+[WIP] Not supported yet, but soon.
+
 ## Example
 
 Person v1:

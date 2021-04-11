@@ -29,12 +29,40 @@ public protocol JSONVersionMigrationProtocol {
     func migrate(origin: JSONType) throws -> JSONType
 }
 
-public struct JSONMigration<Migration: JSONVersionMigrationProtocol> {
+public extension JSONVersionMigrationProtocol {
     
-    let currentVersion: Migration.JSONType.VersionType
-    let versionMigrations: [Migration]
+    func eraseToAnyMigration() -> AnyJSONVersionMigration<JSONType> {
+        AnyJSONVersionMigration(self)
+    }
+}
+
+public struct AnyJSONVersionMigration<JSONType: JSONVersionable>: JSONVersionMigrationProtocol {
     
-    func migration(origin: Migration.JSONType) throws -> Migration.JSONType {
+    public init<MigrationProtocol>(_ inner: MigrationProtocol)
+    where
+        MigrationProtocol: JSONVersionMigrationProtocol,
+        MigrationProtocol.JSONType == JSONType
+    {
+        migrate = inner.migrate
+    }
+    
+    public func migrate(origin: JSONType) throws -> JSONType {
+        try migrate(origin)
+    }
+
+    let migrate: (JSONType) throws -> JSONType
+}
+
+public struct JSONMigration<JSONType: JSONVersionable> {
+    
+    public typealias Migration = AnyJSONVersionMigration<JSONType>
+    
+    public init(currentVersion: JSONType.VersionType, versionMigrations: [Migration]) {
+        self.currentVersion = currentVersion
+        self.versionMigrations = versionMigrations
+    }
+
+    public func migration(origin: JSONType) throws -> JSONType {
         var final = origin
         var versionMigrationsIterator = versionMigrations.makeIterator()
 
@@ -45,4 +73,7 @@ public struct JSONMigration<Migration: JSONVersionMigrationProtocol> {
 
         return final
     }
+    
+    let currentVersion: JSONType.VersionType
+    let versionMigrations: [Migration]
 }

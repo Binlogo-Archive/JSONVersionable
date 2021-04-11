@@ -15,9 +15,8 @@ final class JSONVersionableTests: XCTestCase {
     func testV1ToV2Migration() {
         let origin = PersonFixtures.simpleV1
         let v2Migration = PersonV2Migration().eraseToAnyMigration()
-        let v3Migration = PersonV3Migration().eraseToAnyMigration()
-        let migration = JSONMigration(currentVersion: 2, versionMigrations: [v2Migration, v3Migration])
-        let migratedJSON = try! migration.migration(origin: origin).json
+        let processor = JSONMigrationProcessor(currentVersion: 2, versionMigrations: [v2Migration])
+        let migratedJSON = try! processor.migration(origin: origin).json
         
         let peopleJSON = migratedJSON["people"] as! [JSON]
         let firstPerson = peopleJSON.first!
@@ -31,8 +30,8 @@ final class JSONVersionableTests: XCTestCase {
     func testV2ToV3Migration() {
         let origin = PersonFixtures.simpleV2
         let v3 = PersonV3Migration().eraseToAnyMigration()
-        let migration = JSONMigration(currentVersion: 3, versionMigrations: [v3])
-        let migratedJSON = try! migration.migration(origin: origin).json
+        let processor = JSONMigrationProcessor(currentVersion: 3, versionMigrations: [v3])
+        let migratedJSON = try! processor.migration(origin: origin).json
         
         let peopleJSON = migratedJSON["people"] as! [JSON]
         let firstPerson = peopleJSON.first!
@@ -44,7 +43,24 @@ final class JSONVersionableTests: XCTestCase {
         XCTAssertEqual(firstPerson["mark_as_favorite"] as! Bool, false)
     }
     
-    // TODO: V1 to V3
+    func testV1ToV3Migration() {
+        let origin = PersonFixtures.simpleV1
+        let versionMigrations = [
+            PersonV2Migration().eraseToAnyMigration(),
+            PersonV3Migration().eraseToAnyMigration(),
+        ]
+        let processor = JSONMigrationProcessor(currentVersion: 3, versionMigrations: versionMigrations)
+        let migratedJSON = try! processor.migration(origin: origin).json
+        
+        let peopleJSON = migratedJSON["people"] as! [JSON]
+        let firstPerson = peopleJSON.first!
+        
+        XCTAssertEqual(migratedJSON["schema_version"] as! Int, 3)
+        XCTAssertEqual(peopleJSON.count, 2)
+        XCTAssertEqual(firstPerson["first_name"] as! String, "Fred")
+        XCTAssertEqual(firstPerson["last_name"] as! String, "Weasley")
+        XCTAssertEqual(firstPerson["mark_as_favorite"] as! Bool, false)
+    }
 
     static var allTests = [
         ("testV1Load", testV1Load),

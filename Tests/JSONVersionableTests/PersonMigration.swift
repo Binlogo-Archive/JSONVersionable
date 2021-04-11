@@ -18,7 +18,7 @@ struct PersonJSONVersionable: JSONVersionable {
     }
 }
 
-struct PersonV2Migration: JSONVersionMigrationProtocol {
+struct PersonV2Migration: JSONVersionMigration {
     func migrate(origin: PersonJSONVersionable) throws -> PersonJSONVersionable {
         var mutableContent = origin.json
         
@@ -53,7 +53,7 @@ struct PersonV2Migration: JSONVersionMigrationProtocol {
     }
 }
 
-struct PersonV3Migration: JSONVersionMigrationProtocol {
+struct PersonV3Migration: JSONVersionMigration {
     func migrate(origin: PersonJSONVersionable) throws -> PersonJSONVersionable {
         var mutableContent = origin.json
         

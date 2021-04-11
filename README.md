@@ -48,20 +48,32 @@ Person v2:
 
 ### Migration
 
+Single version jump migration:
 ```swift
 let origin = PersonFixtures.simpleV1
-let v2Migration = PersonV2Migration()
-let migration = JSONMigration(currentVersion: 2, versionMigrations: [v2Migration])
+let v2Migration = PersonV2Migration().eraseToAnyMigration()
+let processor = JSONMigrationProcessor(currentVersion: 2, versionMigrations: [v2Migration])
 do {
-    let migratedJSON = try migration.migration(origin: origin).json
+    let migratedJSON = try processor.migration(origin: origin).json
 } catch {
     print(error)
 }
 ```
 
-## Progress
-
-MVP implementaion, but still WIP.
+Multiple versions migration
+```swift
+let origin = PersonFixtures.simpleV1
+let versionMigrations = [
+    PersonV2Migration().eraseToAnyMigration(),
+    PersonV3Migration().eraseToAnyMigration(),
+]
+let processor = JSONMigrationProcessor(currentVersion: 3, versionMigrations: versionMigrations)
+do {
+    let migratedJSON = try processor.migration(origin: origin).json
+} catch {
+    print(error)
+}
+```
 
 ## Inspirations & Thanks
 

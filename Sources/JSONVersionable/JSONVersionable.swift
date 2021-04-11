@@ -15,7 +15,7 @@ public protocol JSONVersionable {
     func schemaVersion(of json: JSON) throws -> VersionType
 }
 
-extension JSONVersionable {
+public extension JSONVersionable {
     func schemaVersion(of json: JSON) throws -> VersionType {
         guard let version = json[schemaVersionKey] as? VersionType else {
             throw MigrationError.missingSchemaVersion
@@ -24,24 +24,24 @@ extension JSONVersionable {
     }
 }
 
-public protocol JSONVersionMigrationProtocol {
+public protocol JSONVersionMigration {
     associatedtype JSONType: JSONVersionable
     func migrate(origin: JSONType) throws -> JSONType
 }
 
-public extension JSONVersionMigrationProtocol {
-    
+public extension JSONVersionMigration {
     func eraseToAnyMigration() -> AnyJSONVersionMigration<JSONType> {
         AnyJSONVersionMigration(self)
     }
 }
 
-public struct AnyJSONVersionMigration<JSONType: JSONVersionable>: JSONVersionMigrationProtocol {
+public struct AnyJSONVersionMigration<JSONType: JSONVersionable>: JSONVersionMigration {
+    let migrate: (JSONType) throws -> JSONType
     
-    public init<MigrationProtocol>(_ inner: MigrationProtocol)
+    public init<Migration>(_ inner: Migration)
     where
-        MigrationProtocol: JSONVersionMigrationProtocol,
-        MigrationProtocol.JSONType == JSONType
+        Migration: JSONVersionMigration,
+        Migration.JSONType == JSONType
     {
         migrate = inner.migrate
     }
@@ -49,13 +49,14 @@ public struct AnyJSONVersionMigration<JSONType: JSONVersionable>: JSONVersionMig
     public func migrate(origin: JSONType) throws -> JSONType {
         try migrate(origin)
     }
-
-    let migrate: (JSONType) throws -> JSONType
 }
 
-public struct JSONMigration<JSONType: JSONVersionable> {
+public struct JSONMigrationProcessor<JSONType: JSONVersionable> {
     
     public typealias Migration = AnyJSONVersionMigration<JSONType>
+    
+    public let currentVersion: JSONType.VersionType
+    public let versionMigrations: [Migration]
     
     public init(currentVersion: JSONType.VersionType, versionMigrations: [Migration]) {
         self.currentVersion = currentVersion
@@ -63,17 +64,12 @@ public struct JSONMigration<JSONType: JSONVersionable> {
     }
 
     public func migration(origin: JSONType) throws -> JSONType {
-        var final = origin
-        var versionMigrationsIterator = versionMigrations.makeIterator()
-
-        while try final.schemaVersion(of: final.json) < currentVersion,
-              let versionMigration = versionMigrationsIterator.next() {
-            final = try versionMigration.migrate(origin: origin)
+        try versionMigrations.reduce(origin) { (current, versionMigration) in
+            if try current.schemaVersion(of: current.json) < currentVersion {
+                return try versionMigration.migrate(origin: current)
+            } else {
+                return current
+            }
         }
-
-        return final
     }
-    
-    let currentVersion: JSONType.VersionType
-    let versionMigrations: [Migration]
 }
